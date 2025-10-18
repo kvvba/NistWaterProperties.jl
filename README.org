@@ -1,0 +1,1 @@
+NistWaterProperties.jl provides an interface for retrieving physical and thermal water properties from the [[https://webbook.nist.gov/chemistry/fluid/][NIST Chemistry WebBook]] in base SI units.

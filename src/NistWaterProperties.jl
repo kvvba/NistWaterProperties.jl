@@ -1,47 +1,49 @@
 module NistWaterProperties
 
 export get_satdata
-export WaterSatProps
+export Fluid
+export Properties
 
 import HTTP
 import Gumbo
 
-mutable struct WaterSatProps
-    T::Real                  # temperature (K)
-    P::Real                  # pressure (Pa)
-    rhol::Real               # liquid density (kg/m3)
-    voll::Real               # liquid specific volume (m3/kg)
-    ul::Real                 # liquid specific internal energy (J/kg)
-    hl::Real                 # liquid specific enthalpy (J/kg)
-    sl::Real                 # liquid specific entropy (J/kg*K)
-    cvl::Real                # liquid specific heat, constant volume (J/kg*K)
-    cpl::Real                # liquid specific heat, constant pressure (J/kg*K)
-    cl::Real                 # liquid speed of sound (m/s)
-    mujtl::Real              # liquid Joule-Thomson coefficient (K/Pa)
-    mul::Real                # liquid dynamic viscosity (Pa*s)
-    lambdal::Real            # liquid thermal conductivity (W/m*K)
-    sigma::Real              # surface tension (N/m)
-    rhov::Real               # vapour density (kg/m3)
-    volv::Real               # vapour specific volume (m3/kg)
-    uv::Real                 # vapour specific internal energy (J/kg)
-    hv::Real                 # vapour specific enthalpy (J/kg)
-    sv::Real                 # vapour specific entropy (J/kg*K)
-    cvv::Real                # vapour specific heat, constant volume (J/kg*K)
-    cpv::Real                # vapour specific heat, constant pressure (J/kg*K)
-    cv::Real                 # vapour speed of sound (m/s)
-    mujtv::Real              # vapour Joule-Thomson coefficient (K/Pa)
-    muv::Real                # vapour dynamic viscosity (Pa*s)
-    lambdav::Real            # vapour thermal conductivity (W/m*K)
+mutable struct Fluid
+    rho::Real               # density (kg/m3)
+    vol::Real               # specific volume (m3/kg)
+    u::Real                 # specific internal energy (J/kg)
+    h::Real                 # specific enthalpy (J/kg)
+    s::Real                 # specific entropy (J/kg*K)
+    cv::Real                # specific heat, constant volume (J/kg*K)
+    cp::Real                # specific heat, constant pressure (J/kg*K)
+    c::Real                 # speed of sound (m/s)
+    mujt::Real              # Joule-Thomson coefficient (K/Pa)
+    mu::Real                # dynamic viscosity (Pa*s)
+    lambda::Real            # thermal conductivity (W/m*K)
+    phase::String           # phase
 end
 
-function make_sat_si(data::WaterSatProps)
+mutable struct Properties
+    T::Real                  # temperature (K)
+    P::Real                  # pressure (Pa)
+    sigma::Real              # surface tension (N/m)
+    phases::Dict{String, Fluid}    # dict of phases
+end
+
+function make_fluid_si(data::Fluid)
+    data.u = data.u * 1e3
+    data.h = data.h * 1e3
+    data.s= data.s * 1e3
+    data.cp = data.cp * 1e3
+    data.cv = data.cv * 1e3
+    data.mujt = data.mujt * 1e-6
+    return data
+end
+
+function make_properties_si(data::Properties)
     data.P = data.P * 1e6
-    (data.ul, data.uv) = (data.ul * 1e3, data.uv * 1e3)
-    (data.hl, data.hv) = (data.hl * 1e3, data.hv * 1e3)
-    (data.sl, data.sv) = (data.sl * 1e3, data.sv * 1e3)
-    (data.cpl, data.cpv) = (data.cpl * 1e3, data.cpv * 1e3)
-    (data.cvl, data.cvv) = (data.cvl * 1e3, data.cvv * 1e3)
-    (data.mujtl, data.mujtv) = (data.mujtl * 1e-6, data.mujtv * 1e-6)
+    for i in eachindex(data.phases)
+        data.phases[i] = make_fluid_si(data.phases[i])
+    end
     return data
 end
 
@@ -49,9 +51,10 @@ function get_satdata(pspec::Bool, value::Real)
     """
     get_satdata(pspec::Bool, value::Real)
 
-    Returns a struct containing saturated water properties from the NIST webbook, specified by pressure for pspec=true and temperature for pspec=false
+    Returns a struct containing saturated water properties from the NIST webbook, specified by pressure for pspec=true and temperature for pspec=false.
+    Pressure is specified in MPa, temperature is specified in Kelvin.
     """
-    return make_sat_si(fetch_satdata(pspec, value))
+    return make_properties_si(fetch_satdata(pspec, value))
 end
 
 function fetch_satdata(pspec::Bool, value::Real)
@@ -70,9 +73,15 @@ function fetch_satdata(pspec::Bool, value::Real)
 
     text = ((parsed.root[2])[1]).text
     rows = split(text, "\n")
+    # heading = split(rows[1], "\t")
     data = parse.(Float64, split(rows[2], "\t"))
 
-    return WaterSatProps(data...)
+    liquid = Fluid(data[3:13]..., "liquid")
+    vapour = Fluid(data[15:25]..., "vapour")
+    
+    water = Properties(data[1], data[2], data[14], Dict("liquid" => liquid, "vapour" => vapour))
+
+    return water
 end
 
 end # module NistWaterProperties

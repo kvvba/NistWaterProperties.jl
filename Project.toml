@@ -1,6 +1,6 @@
 name = "NistWaterProperties"
 uuid = "b9ae56a2-34c3-4b5c-a7d3-7f6a5fc73a87"
-version = "0.1.0"
+version = "1.0.0"
 authors = ["jakub <jakub@posteo.net>"]
 
 [deps]

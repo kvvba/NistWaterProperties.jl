@@ -77,9 +77,9 @@ function fetch_satdata(pspec::Bool, value::Real)
     data = parse.(Float64, split(rows[2], "\t"))
 
     liquid = Fluid(data[3:13]..., "liquid")
-    vapour = Fluid(data[15:25]..., "vapour")
+    vapor = Fluid(data[15:25]..., "vapor")
     
-    water = Properties(data[1], data[2], data[14], Dict("liquid" => liquid, "vapour" => vapour))
+    water = Properties(data[1], data[2], data[14], Dict("liquid" => liquid, "vapor" => vapor))
 
     return water
 end

@@ -1,1 +1,9 @@
+* Description
 NistWaterProperties.jl provides an interface for retrieving physical and thermal water properties from the [[https://webbook.nist.gov/chemistry/fluid/][NIST Chemistry WebBook]] in base SI units.
+
+* Usage
+Retrieving saturation data for water at a pressure of 2 MPa, and then printing the density of steam at those conditions
+#+begin_src julia
+  water = NistWaterProperties.get_satdata(true, 2)
+  println(water.phases["vapor"].rho)
+#+end_src
